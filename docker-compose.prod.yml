@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: ./devops/backend/Dockerfile
+    restart: unless-stopped
+    entrypoint: /code/devops/backend/server-entrypoint.sh
+    env_file:
+      - ./.env
+    networks:
+      - backend
+    expose:
+      - 8000
+    volumes:
+      - static_volume:/code/backend/staticfiles
+      - media_volume:/code/backend/media
+      # - .:/code
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16.2
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    container_name: db
+    restart: always
+    networks:
+      - backend
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    
+    expose:
+      - 5433
+    
+    ports:
+      - "5433:5432"
+  
+  redis:
+    restart: unless-stopped
+    image: redis:7.2.4
+    networks:
+      - backend
+    expose:
+      - 6379
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./devops/nginx/Dockerfile
+    restart: always
+    networks:
+      - backend
+    ports:
+      - ${NGINX_PORT}:80
+    volumes:
+      - static_volume:/code/backend/staticfiles
+      - media_volume:/code/backend/media
+      - ./frontend:/frontend
+    depends_on:
+      - web
+      - daphne
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
