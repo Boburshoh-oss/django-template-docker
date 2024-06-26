@@ -67,17 +67,13 @@ CSRF_TRUSTED_ORIGINS = [
     "http://0.0.0.0:8000/",
     "http://0.0.0.0",
     "http://localhost",
-    "https://manecafe.uz",
-    "https://api.manecafe.uz/",
-    "https://api.manecafe.uz",
-    "https://manecafe.uz/",
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = "*"
-DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "https://api.manecafe.uz")
+DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "https://example.com")
 # DOMAIN_NAME = "https://1fda-188-113-213-235.ngrok-free.app"
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
