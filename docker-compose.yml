@@ -40,9 +40,9 @@ services:
       - postgres_data:/var/lib/postgresql/data/
       #      - ./mane_cafe-db.sql:/docker-entrypoint-initdb.d/dump.sql
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     ports:
       - "5435:5432"
 
