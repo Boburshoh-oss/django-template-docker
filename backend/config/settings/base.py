@@ -107,16 +107,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "HOST": os.environ.get("DB_HOSTNAME", "db"),
-        "NAME": os.environ.get("DB_NAME", "postgres"),
-        "USER": os.environ.get("DB_USERNAME", "postgres"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
-        "PORT": int(os.environ.get("DB_PORT", "5432")),
-    }
-}
+
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # (50MEGABYTES)
 DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE

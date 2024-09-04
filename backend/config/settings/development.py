@@ -3,7 +3,16 @@ import os
 import mimetypes
 
 DEBUG = True
-
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": os.environ.get("DB_HOSTNAME", "db"),
+        "NAME": os.environ.get("DB_NAME", "postgres"),
+        "USER": os.environ.get("DB_USERNAME", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
+        "PORT": int(os.environ.get("DB_PORT", "5432")),
+    }
+}
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "../", "staticfiles")
 
