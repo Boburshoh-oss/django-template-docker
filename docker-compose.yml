@@ -4,7 +4,7 @@ services:
   ngrok:
       image: ngrok/ngrok:alpine
       env_file:
-        - ./ngrok/.env
+      - ./.env
       command: 'http web:8000'        
       ports:
           - '4040:4040'
