@@ -1,8 +1,6 @@
 
 
 services:
-
-
   web:
     build:
       context: .
@@ -11,8 +9,6 @@ services:
     entrypoint: /code/devops/backend/local-entrypoint.sh
     env_file:
       - ./.env
-    environment:
-      - REDIS_HOST=redis
     ports:
       - 8000:8000
     expose:
@@ -23,14 +19,12 @@ services:
       - .:/code
     depends_on:
       - db
-      - redis
 
   
   db:
     image: postgres:16.2
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-      #      - ./mane_cafe-db.sql:/docker-entrypoint-initdb.d/dump.sql
     environment:
       - POSTGRES_USER=${DB_USERNAME}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -38,29 +32,8 @@ services:
     ports:
       - "5435:5432"
 
-  redis:
-    restart: unless-stopped
-    image: redis:7.2.4
-    ports:
-      - "6379:6379"
-    expose:
-      - 6379
-
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: "boburbekbotirov868@gmail.com"  
-  #     PGADMIN_DEFAULT_PASSWORD: "supersecret"    
-  #   ports:
-  #     - "5050:80"  
-  #   depends_on:
-  #     - db  
-  #   restart: unless-stopped
-  #   volumes:
-  #     - pgadmin_data:/var/lib/pgadmin
 
 volumes:
   postgres_data:
   static_volume:
   media_volume:
-  # pgadmin_data:

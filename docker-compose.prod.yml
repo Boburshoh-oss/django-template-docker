@@ -19,7 +19,6 @@ services:
       # - .:/code
     depends_on:
       - db
-      - redis
 
   db:
     image: postgres:16.2
@@ -40,13 +39,6 @@ services:
     ports:
       - "5433:5432"
   
-  redis:
-    restart: unless-stopped
-    image: redis:7.2.4
-    networks:
-      - backend
-    expose:
-      - 6379
 
   nginx:
     build:

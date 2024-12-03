@@ -47,21 +47,22 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
+    "config.middlewares.CatchRaisedRedirectMiddleware",
     # 'debug_toolbar.middleware.show_toolbar'
 ]
 
 # redis settings
-LOCATION_REDIS = os.getenv("REDIS_URL", "redis://redis:6379") + "/1"
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": LOCATION_REDIS,
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-        "KEY_PREFIX": "mane",
-    }
-}
+# LOCATION_REDIS = os.getenv("REDIS_URL", "redis://redis:6379") + "/1"
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": LOCATION_REDIS,
+#         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+#         "KEY_PREFIX": "mane",
+#     }
+# }
 
-REDIS_TIMEOUT = int(os.getenv("REDIS_TIMEOUT", 300))
+# REDIS_TIMEOUT = int(os.getenv("REDIS_TIMEOUT", 300))
 
 CSRF_TRUSTED_ORIGINS = [
     "http://0.0.0.0:8000/",
@@ -98,15 +99,14 @@ TEMPLATES = [
 
 # WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("redis", 6379)],
-        },
-    },
-}
-
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [("redis", 6379)],
+#         },
+#     },
+# }
 
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # (50MEGABYTES)
@@ -176,9 +176,9 @@ STATIC_URL = "static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "../", "media/")
 
-# celery broker and result
-CELERY_BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("RESULT_BACKEND", "redis://localhost:6379/0")
+# # celery broker and result
+# CELERY_BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/0")
+# CELERY_RESULT_BACKEND = os.environ.get("RESULT_BACKEND", "redis://localhost:6379/0")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
