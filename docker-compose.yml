@@ -1,15 +1,7 @@
 
 
 services:
-  ngrok:
-      image: ngrok/ngrok:alpine
-      env_file:
-      - ./.env
-      command: 'http web:8000'        
-      ports:
-          - '4040:4040'
-      expose:
-          - '4040'
+
 
   web:
     build:
