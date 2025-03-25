@@ -5,7 +5,7 @@ djangorestframework-simplejwt==5.3.1
 django-redis
 python-dotenv==1.0.1
 gunicorn
-psycopg2-binary
+psycopg[binary,pool]
 Pillow
 django-modeltranslation
 drf-yasg
