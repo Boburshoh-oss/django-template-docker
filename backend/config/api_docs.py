@@ -1,4 +1,4 @@
-from django.conf import settings
+from django.urls import path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -6,18 +6,23 @@ from drf_spectacular.views import (
 )
 
 api_docs_urlpatterns = [
-    SpectacularAPIView.as_view(
-        authentication_classes=[],
-        permission_classes=[],
+    path(
+        "api/schema/",
+        SpectacularAPIView.as_view(authentication_classes=[], permission_classes=[]),
+        name="schema",
     ),
-    SpectacularSwaggerView.as_view(
-        url_name="schema",
-        authentication_classes=[],
-        permission_classes=[],
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(
+            url_name="schema", authentication_classes=[], permission_classes=[]
+        ),
+        name="swagger-ui",
     ),
-    SpectacularRedocView.as_view(
-        url_name="schema",
-        authentication_classes=[],
-        permission_classes=[],
+    path(
+        "api/redoc/",
+        SpectacularRedocView.as_view(
+            url_name="schema", authentication_classes=[], permission_classes=[]
+        ),
+        name="redoc",
     ),
 ]

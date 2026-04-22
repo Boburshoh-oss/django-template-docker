@@ -158,19 +158,20 @@ DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
 
 # ── drf-spectacular ───────────────────────────────────────────────────────────
 SPECTACULAR_SETTINGS = {
-    "TITLE": "API",
-    "DESCRIPTION": "API Documentation",
+    "TITLE": "Django Template API",
+    "DESCRIPTION": "REST API documentation",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_GENERATE_CHOICE_DESCRIPTION": False,
 }
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=28),
-    "ROTATE_REFRESH_TOKENS": False,
+    "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
@@ -186,10 +187,11 @@ USE_I18N = True
 USE_TZ = True
 TIME_ZONE = "Asia/Tashkent"
 
-gettext = lambda s: s  # noqa: E731
+from django.utils.translation import gettext_lazy as _  # noqa: E402
+
 LANGUAGES = (
-    ("uz", gettext("Uzbek")),
-    ("ru", gettext("Russian")),
+    ("uz", _("Uzbek")),
+    ("ru", _("Russian")),
 )
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = "uz"
