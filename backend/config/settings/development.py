@@ -1,26 +1,24 @@
-from config.settings.base import *
-import os
+from config.settings.base import *  # noqa: F403
 import mimetypes
 
 DEBUG = True
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "HOST": os.environ.get("DB_HOSTNAME", "db"),
-        "NAME": os.environ.get("DB_NAME", "postgres"),
-        "USER": os.environ.get("DB_USERNAME", "postgres"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
-        "PORT": int(os.environ.get("DB_PORT", "5432")),
+        "HOST": os.getenv("DB_HOSTNAME", "db"),
+        "NAME": os.getenv("DB_NAME", "postgres"),
+        "USER": os.getenv("DB_USERNAME", "postgres"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
+        "PORT": int(os.getenv("DB_PORT", "5432")),
     }
 }
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "../", "staticfiles")
 
-INTERNAL_IPS = [
-    "127.0.0.1",
-    "0.0.0.0",
-]
-INTERNAL_IPS += env_list("INTERNAL_IPS", [])
+STATIC_ROOT = BASE_DIR / "../staticfiles"
+
+INTERNAL_IPS = ["127.0.0.1", "0.0.0.0"] + env_list("INTERNAL_IPS", [])
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 mimetypes.add_type("application/javascript", ".js", True)

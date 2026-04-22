@@ -1,15 +1,37 @@
 
 
 services:
+  migrate:
+    build:
+      context: .
+      dockerfile: ./devops/backend/Dockerfile
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    env_file: ./.env
+    command: python manage.py migrate --no-input
+    networks:
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+
   web:
-    build: 
+    build:
       context: .
       dockerfile: ./devops/backend/Dockerfile
     init: true
     restart: unless-stopped
-    entrypoint: /code/devops/backend/server-entrypoint.sh
-    env_file:
-      - ./.env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    env_file: ./.env
+    command: >
+      uvicorn config.asgi:application
+      --app-dir .
+      --host 0.0.0.0
+      --port 8000
+      --workers 4
+      --proxy-headers
+      --forwarded-allow-ips=*
     networks:
       - backend
     expose:
@@ -17,36 +39,45 @@ services:
     volumes:
       - static_volume:/code/backend/staticfiles
       - media_volume:/code/backend/media
-      # - .:/code
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   db:
-    image: postgres:16
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
+    image: postgres:18-alpine
     container_name: db
     restart: always
     networks:
       - backend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    
-    expose:
-      - 5433
-    
-    ports:
-      - "5433:5432"
-  
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   nginx:
     build:
@@ -56,7 +87,7 @@ services:
     networks:
       - backend
     ports:
-      - ${NGINX_PORT}:80
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - static_volume:/code/backend/staticfiles
       - media_volume:/code/backend/media
@@ -71,5 +102,7 @@ networks:
 
 volumes:
   postgres_data:
+  redis_data:
   static_volume:
   media_volume:
+

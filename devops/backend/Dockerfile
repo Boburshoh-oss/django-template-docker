@@ -1,28 +1,26 @@
-FROM python:3.12-slim-bookworm
+# ── Stage 1: builder ─────────────────────────────────────────────────────────
+FROM python:3.13-slim-bookworm AS builder
 
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
 
-WORKDIR /code
+COPY --from=ghcr.io/astral-sh/uv:0.6 /uv /uvx /usr/local/bin/
 
-COPY ./requirements.txt .
+WORKDIR /app
 
+COPY pyproject.toml .
+RUN uv sync --no-dev --no-install-project
 
-RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends netcat-openbsd \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --upgrade pip \
-    && pip install -r requirements.txt
+# ── Stage 2: runtime ─────────────────────────────────────────────────────────
+FROM python:3.13-slim-bookworm AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
+
+WORKDIR /code/backend
+
+COPY --from=builder /app/.venv /app/.venv
 
 COPY ./backend /code/backend
-COPY ./devops /code/devops
-
-RUN chmod +x /code/devops/backend/common-entrypoint.sh \
-    && chmod +x /code/devops/backend/server-entrypoint.sh
-# RUN chmod +x /code/devops/backend/worker-entrypoint.sh
-RUN chmod +x /code/devops/backend/local-entrypoint.sh
-RUN chmod +x /code/devops/backend/daphne-entrypoint.sh
-# RUN chmod +x /code/devops/backend/flower-entrypoint.sh

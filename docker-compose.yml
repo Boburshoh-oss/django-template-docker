@@ -1,36 +1,58 @@
 
 
 services:
+  migrate:
+    build:
+      context: .
+      dockerfile: ./devops/backend/Dockerfile
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+    env_file: ./.env
+    command: python manage.py migrate --no-input
+    volumes:
+      - ./backend:/code/backend
+    depends_on:
+      db:
+        condition: service_healthy
+
   web:
     build:
       context: .
       dockerfile: ./devops/backend/Dockerfile
     init: true
     restart: unless-stopped
-    entrypoint: /code/devops/backend/local-entrypoint.sh
-    env_file:
-      - ./.env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+    env_file: ./.env
+    command: >
+      uvicorn config.asgi:application
+      --app-dir .
+      --host 0.0.0.0
+      --port 8000
+      --reload
     ports:
-      - 8000:8000
-    expose:
-      - 8000
+      - "8000:8000"
     volumes:
       - static_volume:/code/backend/staticfiles
       - media_volume:/code/backend/media
-      - .:/code
+      - ./backend:/code/backend
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
-  
   db:
-    image: postgres:16
+    image: postgres:18-alpine
+    restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
@@ -40,8 +62,19 @@ services:
     ports:
       - "5435:5432"
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+  redis_data:
   static_volume:
   media_volume:

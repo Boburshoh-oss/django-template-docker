@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
+
 def env_bool(name, default=False):
     value = os.getenv(name)
     if value is None:
@@ -22,7 +23,7 @@ def env_list(name, default=None):
 
 
 DEBUG = env_bool("DEBUG", False)
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me-in-production")
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["127.0.0.1", "localhost"])
 
@@ -33,78 +34,83 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
+    "django.contrib.sites",
     # third party
     "rest_framework",
     "rest_framework_simplejwt",
-    "rest_framework.authtoken",
-    "drf_yasg",
+    "drf_spectacular",
+    "drf_standardized_errors",
     "corsheaders",
     "django_filters",
-    # for seo
-    "django.contrib.sitemaps",
-    "django.contrib.sites",
-    "drf_standardized_errors",
-    # my apps
-    # 'apps.managers',
+    "modeltranslation",
+    # apps
+    "apps.core",
+    "apps.accounts",
 ]
 
 SITE_ID = 1
 
 if DEBUG:
-    INSTALLED_APPS.append("debug_toolbar")
+    try:
+        import debug_toolbar  # noqa: F401
+        INSTALLED_APPS += ["debug_toolbar"]
+    except ImportError:
+        pass
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.locale.LocaleMiddleware",  # YENİ
+    "django.middleware.locale.LocaleMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "config.middlewares.CatchRaisedRedirectMiddleware",
-    # 'debug_toolbar.middleware.show_toolbar'
+    "config.middlewares.QueryCountMiddleware",
 ]
 
-if DEBUG:
+if DEBUG and "debug_toolbar" in INSTALLED_APPS:
     MIDDLEWARE.insert(
         MIDDLEWARE.index("django.middleware.clickjacking.XFrameOptionsMiddleware"),
         "debug_toolbar.middleware.DebugToolbarMiddleware",
     )
 
-# redis settings
-# LOCATION_REDIS = os.getenv("REDIS_URL", "redis://redis:6379") + "/1"
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": LOCATION_REDIS,
-#         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-#         "KEY_PREFIX": "mane",
-#     }
-# }
+# ── Cache (Redis) ─────────────────────────────────────────────────────────────
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
-# REDIS_TIMEOUT = int(os.getenv("REDIS_TIMEOUT", 300))
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"{REDIS_URL}/1",
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        "KEY_PREFIX": "app",
+        "TIMEOUT": int(os.getenv("REDIS_TIMEOUT", "300")),
+    }
+}
 
+# ── Security ──────────────────────────────────────────────────────────────────
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS",
-    ["http://127.0.0.1:8000", "http://localhost:8000", "http://0.0.0.0:8000"],
+    ["http://127.0.0.1:8000", "http://localhost:8000"],
 )
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", DEBUG)
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", [])
-
 CORS_ALLOW_CREDENTIALS = True
-DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "https://example.com")
-# DOMAIN_NAME = "https://1fda-188-113-213-235.ngrok-free.app"
-
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-ROOT_URLCONF = "config.urls"
+DOMAIN_NAME = os.getenv("DOMAIN_NAME", "http://localhost:8000")
 
+# ── URLs & ASGI ───────────────────────────────────────────────────────────────
+ROOT_URLCONF = "config.urls"
+ASGI_APPLICATION = "config.asgi.application"
+
+# ── Templates ─────────────────────────────────────────────────────────────────
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "../templates", os.path.join(BASE_DIR, "../templates")],
+        "DIRS": [BASE_DIR / "../templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -117,103 +123,50 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = "config.wsgi.application"
-ASGI_APPLICATION = "config.asgi.application"
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("redis", 6379)],
-#         },
-#     },
-# }
-
-
-FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # (50MEGABYTES)
-DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
-
-# DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800
-# maximal vide hajmini limiti
+# ── Auth ──────────────────────────────────────────────────────────────────────
+AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
-# AUTH_USER_MODEL = "accounts.User"
 
+# ── DRF ───────────────────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
-    # "DEFAULT_PERMISSION_CLASSES": [
-    #     "rest_framework.permissions.IsAuthenticated",
-    # ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 40,
-    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
-    "DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S",
-    # 'EXCEPTION_HANDLER': 'apps.utils.custom_exception.custom_exception_handler'
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%S",
     "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
 }
+
 DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
 
-LANGUAGE_CODE = "uz"
-
-USE_I18N = True
-
-USE_TZ = True
-TIME_ZONE = "Asia/Tashkent"
-
-# LANGUAGES = (("en", "English"), ("ru", "Russian"), ("uz", "Uzbek"))
-gettext = lambda s: s
-LANGUAGES = (
-    ("uz", gettext("Uzbek")),
-    ("ru", gettext("Russian")),
-)
-
-MODELTRANSLATION_DEFAULT_LANGUAGE = "uz"
-MODELTRANSLATION_LANGUAGES = ("uz", "ru")
-
-LOCALE_PATHS = [
-    BASE_DIR / "locale/",
-]
-
-STATIC_URL = "static/"
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "../", "media/")
-
-# # celery broker and result
-# CELERY_BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/0")
-# CELERY_RESULT_BACKEND = os.environ.get("RESULT_BACKEND", "redis://localhost:6379/0")
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-REVERSION = {
-    "DELETE_STALE_VERSIONS": False,
+# ── drf-spectacular ───────────────────────────────────────────────────────────
+SPECTACULAR_SETTINGS = {
+    "TITLE": "API",
+    "DESCRIPTION": "API Documentation",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
-EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
-
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
-
-# JWT
+# ── JWT ───────────────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=28),
@@ -222,31 +175,51 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
-    "VERIFYING_KEY": None,
-    "AUDIENCE": None,
-    "ISSUER": None,
     "AUTH_HEADER_TYPES": ("Bearer",),
-    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
-    "TOKEN_TYPE_CLAIM": "token_type",
-    "JTI_CLAIM": "jti",
-    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
-    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
-    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
 }
 
-# swagger
-SWAGGER_SETTINGS = {
-    "SECURITY_DEFINITIONS": {
-        "basic": {"type": "basic"},
-        "Bearer": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header",
-            "description": "Type in the *'Value'* input box below: **'Bearer &lt;JWT&gt;'**, "
-            "where JWT is the JSON web token you get back when logging in.",
-        },
-    }
-}
+# ── i18n ──────────────────────────────────────────────────────────────────────
+LANGUAGE_CODE = "uz"
+USE_I18N = True
+USE_TZ = True
+TIME_ZONE = "Asia/Tashkent"
+
+gettext = lambda s: s  # noqa: E731
+LANGUAGES = (
+    ("uz", gettext("Uzbek")),
+    ("ru", gettext("Russian")),
+)
+
+MODELTRANSLATION_DEFAULT_LANGUAGE = "uz"
+MODELTRANSLATION_LANGUAGES = ("uz", "ru")
+
+LOCALE_PATHS = [BASE_DIR / "locale/"]
+
+# ── Files ─────────────────────────────────────────────────────────────────────
+STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "../media"
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
+
+# ── Email ─────────────────────────────────────────────────────────────────────
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+# ── Celery (optional — enable by setting BROKER_URL in env) ───────────────────
+# CELERY_BROKER_URL = os.getenv("BROKER_URL", f"{REDIS_URL}/0")
+# CELERY_RESULT_BACKEND = os.getenv("RESULT_BACKEND", f"{REDIS_URL}/0")
+# CELERY_TASK_SERIALIZER = "json"
+# CELERY_RESULT_SERIALIZER = "json"
+# CELERY_ACCEPT_CONTENT = ["json"]
+# CELERY_TIMEZONE = TIME_ZONE
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+

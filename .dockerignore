@@ -16,3 +16,6 @@ staticfiles
 node_modules
 .vscode
 .idea
+
+pytest.ini
+setup.cfg

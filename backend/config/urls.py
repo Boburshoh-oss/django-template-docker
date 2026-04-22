@@ -4,30 +4,30 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
-from .scheme import swagger_urlpatterns
-
-
-def trigger_error(request):
-    division_by_zero = 1 / 0
-
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 urlpatterns = [
-    path('sentry-debug/', trigger_error),
     path("admin/", admin.site.urls),
-    path("auth/", include("rest_framework.urls", namespace="rest_framework")),
-
-    path('api/v1/', include('apps.urls')),
+    path("api/v1/", include("apps.routers.v1")),
+    # OpenAPI 3.0
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
 
-if settings.DEBUG:
-    urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
-
-urlpatterns += swagger_urlpatterns
+if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS:
+    try:
+        import debug_toolbar  # noqa: F401
+        urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
+    except ImportError:
+        pass
 
 urlpatterns = [
     *i18n_patterns(*urlpatterns, prefix_default_language=False),
-
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
