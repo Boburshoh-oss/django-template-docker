@@ -1,89 +1,124 @@
 # Django Template Docker
 
-Minimal Django + DRF template with Docker-based local development and a production compose stack. The template has been refreshed for a more modern workflow: current Python base image, Compose v2 commands, healthchecks, environment-driven settings, and safer debug/prod defaults.
+Production-oriented Django template with Docker for local development, a separate production compose stack, and ready-to-use GitHub Actions automation.
 
 ## Stack
 
-- Python 3.12
-- Django + Django REST Framework
-- PostgreSQL 16
-- Gunicorn + Nginx for production compose
-- drf-yasg for API docs
+- Python 3.13
+- Django 6 + Django REST Framework
+- PostgreSQL 18
+- Redis 7
+- Uvicorn + Nginx
+- uv for dependency management
+- drf-spectacular for OpenAPI schema and docs
 
-## What Was Modernized
+## What This Template Includes
 
-- Docker image moved to `python:3.12-slim-bookworm`
-- Compose services now use `depends_on.condition` with PostgreSQL healthchecks
-- Django settings now read list/bool values from environment variables
-- `debug_toolbar` and debug routes load only when `DEBUG=True`
-- `manage.py` now respects `DJANGO_SETTINGS_MODULE` from the environment
-- Make targets use `docker compose` instead of deprecated `docker-compose`
+- Docker Compose setup for development and production
+- Split Django settings for development and production
+- Custom user model with JWT authentication support
+- Redis cache configuration
+- OpenAPI schema generation with Swagger and ReDoc
+- GitHub Actions CI for linting and tests
+- GitHub Actions CD for publishing Docker images to GHCR
 
 ## Quick Start
 
 1. Copy the sample environment file.
-2. Start the development stack.
-3. Run migrations.
+2. Start the local services.
+3. Apply migrations.
 
 ```bash
-cp .env-example .env
-make dev-up
-docker compose -f docker-compose.yml exec web python backend/manage.py migrate
+cp .env.example .env
+docker compose up --build -d
+docker compose run --rm migrate
 ```
 
 Application endpoints:
 
 - Django app: `http://127.0.0.1:8000`
-- Swagger UI: `http://127.0.0.1:8000/swagger/`
-- ReDoc: `http://127.0.0.1:8000/redoc/`
+- OpenAPI schema: `http://127.0.0.1:8000/api/schema/`
+- Swagger UI: `http://127.0.0.1:8000/api/docs/`
+- ReDoc: `http://127.0.0.1:8000/api/redoc/`
 
-## Common Commands
+## Local Development
+
+Start the development stack:
 
 ```bash
-make dev-up
-make dev-down
-make prod-up
-make prod-down
-make makemigrations
-make migrate
-make createsuperuser
-make logs
+docker compose up --build
 ```
+
+Run management commands inside the app container:
+
+```bash
+docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py makemigrations
+docker compose exec web python manage.py migrate
+```
+
+Stop and remove containers:
+
+```bash
+docker compose down
+```
+
+Start the production-like stack locally:
+
+```bash
+docker compose -f docker-compose.prod.yml up --build
+```
+
+## Local Quality Checks
+
+If you want to run checks without Docker, install dependencies with `uv`:
+
+```bash
+uv sync --extra dev
+uv run ruff check backend
+uv run pytest
+```
+
+## CI/CD
+
+This template now includes two GitHub Actions workflows:
+
+- `ci.yml`: runs `ruff` and `pytest` on pushes and pull requests using PostgreSQL and Redis service containers.
+- `cd.yml`: builds and publishes `backend` and `nginx` Docker images to GitHub Container Registry on every push to `main` and on manual dispatch.
+
+Published image names follow this pattern:
+
+```text
+ghcr.io/<owner>/<repository>/backend
+ghcr.io/<owner>/<repository>/nginx
+```
+
+The provided CD workflow is a template-friendly baseline. It handles image publishing, while the final deployment step should be adapted to your hosting environment.
 
 ## Environment Notes
 
 Important variables in `.env`:
 
-- `DEBUG`: toggles debug-only tooling like Django Debug Toolbar
-- `ALLOWED_HOSTS`: comma-separated list
-- `CORS_ALLOWED_ORIGINS`: comma-separated list when `CORS_ALLOW_ALL_ORIGINS=False`
-- `CSRF_TRUSTED_ORIGINS`: comma-separated list with scheme, for example `http://localhost:8000`
+- `DEBUG`: enables development-only behavior such as Debug Toolbar
 - `DJANGO_SETTINGS_MODULE`: `config.settings.development` or `config.settings.production`
+- `ALLOWED_HOSTS`: comma-separated host list
+- `CSRF_TRUSTED_ORIGINS`: comma-separated origins including scheme
+- `DB_HOSTNAME`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `DB_PORT`: PostgreSQL connection settings
+- `REDIS_URL`: Redis connection string
+- `SENTRY_DSN`: optional production error reporting
 
-Production security flags are intentionally environment-controlled so the same template can run behind or without a TLS-terminating proxy.
+Production security flags are intentionally environment-controlled so this template can run behind different proxy and TLS setups.
 
 ## Project Layout
 
 ```text
 backend/
-	apps/
-	config/
+  apps/
+  config/
 devops/
-	backend/
-	nginx/
+  backend/
+  nginx/
 frontend/
 templates/
 ```
-
-## Next Improvements
-
-- Replace `drf-yasg` with `drf-spectacular` if you want OpenAPI 3-first schema generation
-- Add Celery/Redis services only if the project actually uses async jobs
-- Add CI for linting, tests, and image builds
-
-## Entrypoint Notes
-
-Backend service scripts now share a common helper in `devops/backend/common-entrypoint.sh`. They use strict shell mode, wait for PostgreSQL only when needed, and end with `exec` so signals reach the main process correctly inside containers.
-
-The Celery worker and Flower scripts are kept as optional entrypoints. If you enable them, make sure Celery is installed and wired into the project first.
 
