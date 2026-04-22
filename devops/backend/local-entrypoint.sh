@@ -1,24 +1,13 @@
 #!/bin/sh
 
-echo 'Waiting for postgres...'
+set -eu
 
-while ! nc -z $DB_HOSTNAME $DB_PORT; do
-    sleep 0.1
-done
+. /code/devops/backend/common-entrypoint.sh
 
-echo 'PostgreSQL started'
+wait_for_postgres
+collect_static
 
-echo 'Running migrations...'
-cd backend  # <-- Katalogni o'zgartirish
-# python manage.py migrate
-
-
-echo 'Collecting static files...'
-python manage.py collectstatic --no-input
-
-
-
-echo 'Running server...'
-python manage.py runserver 0.0.0.0:8000
+require_command python
+exec_in_app python manage.py runserver 0.0.0.0:8000
 
 

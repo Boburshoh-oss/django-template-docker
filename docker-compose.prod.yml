@@ -5,6 +5,7 @@ services:
     build: 
       context: .
       dockerfile: ./devops/backend/Dockerfile
+    init: true
     restart: unless-stopped
     entrypoint: /code/devops/backend/server-entrypoint.sh
     env_file:
@@ -18,10 +19,11 @@ services:
       - media_volume:/code/backend/media
       # - .:/code
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
-    image: postgres:16.2
+    image: postgres:16
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     container_name: db
@@ -32,6 +34,12 @@ services:
       - POSTGRES_USER=${DB_USERNAME}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     
     expose:
       - 5433
@@ -54,7 +62,8 @@ services:
       - media_volume:/code/backend/media
       - ./frontend:/frontend
     depends_on:
-      - web
+      web:
+        condition: service_started
 
 networks:
   backend:

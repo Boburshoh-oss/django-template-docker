@@ -1,9 +1,8 @@
 #!/bin/sh
 
-until cd /code/backend
-do
-    echo "Waiting for server volume..."
-done
+set -eu
 
-# run a worker :)
-celery -A config worker --loglevel=info  -E 
+. /code/devops/backend/common-entrypoint.sh
+
+require_command celery
+exec_in_app celery -A config worker --loglevel=info -E

@@ -17,10 +17,11 @@ urlpatterns = [
     path("auth/", include("rest_framework.urls", namespace="rest_framework")),
 
     path('api/v1/', include('apps.urls')),
-
-    path("__debug__/", include("debug_toolbar.urls")),
-
 ]
+
+if settings.DEBUG:
+    urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
+
 urlpatterns += swagger_urlpatterns
 
 urlpatterns = [

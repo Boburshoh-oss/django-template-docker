@@ -1,5 +1,4 @@
 django
-python-decouple
 djangorestframework
 djangorestframework-simplejwt==5.3.1
 django-redis

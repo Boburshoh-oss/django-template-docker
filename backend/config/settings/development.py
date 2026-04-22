@@ -20,6 +20,7 @@ INTERNAL_IPS = [
     "127.0.0.1",
     "0.0.0.0",
 ]
+INTERNAL_IPS += env_list("INTERNAL_IPS", [])
 
 
 mimetypes.add_type("application/javascript", ".js", True)

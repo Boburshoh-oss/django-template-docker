@@ -1,7 +1,8 @@
 #!/bin/sh
 
+set -eu
 
-cd backend  # <-- Katalogni o'zgartirish
+. /code/devops/backend/common-entrypoint.sh
 
-echo 'Running daphne server...'
-daphne -b 0.0.0.0 -p 8001 config.asgi:application
+require_command daphne
+exec_in_app daphne -b 0.0.0.0 -p 8001 config.asgi:application

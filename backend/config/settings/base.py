@@ -7,9 +7,24 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+def env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
-ALLOWED_HOSTS = ["*"]
+
+def env_list(name, default=None):
+    value = os.getenv(name)
+    if value is None:
+        return list(default or [])
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+DEBUG = env_bool("DEBUG", False)
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
+
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["127.0.0.1", "localhost"])
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -25,7 +40,6 @@ INSTALLED_APPS = [
     "drf_yasg",
     "corsheaders",
     "django_filters",
-    "debug_toolbar",
     # for seo
     "django.contrib.sitemaps",
     "django.contrib.sites",
@@ -35,6 +49,9 @@ INSTALLED_APPS = [
 ]
 
 SITE_ID = 1
+
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -46,10 +63,15 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "config.middlewares.CatchRaisedRedirectMiddleware",
     # 'debug_toolbar.middleware.show_toolbar'
 ]
+
+if DEBUG:
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.middleware.clickjacking.XFrameOptionsMiddleware"),
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+    )
 
 # redis settings
 # LOCATION_REDIS = os.getenv("REDIS_URL", "redis://redis:6379") + "/1"
@@ -64,16 +86,14 @@ MIDDLEWARE = [
 
 # REDIS_TIMEOUT = int(os.getenv("REDIS_TIMEOUT", 300))
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://0.0.0.0:8000/",
-    "http://0.0.0.0",
-    "http://localhost",
-]
-CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = env_list(
+    "CSRF_TRUSTED_ORIGINS",
+    ["http://127.0.0.1:8000", "http://localhost:8000", "http://0.0.0.0:8000"],
+)
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", DEBUG)
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", [])
 
 CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOW_HEADERS = "*"
 DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "https://example.com")
 # DOMAIN_NAME = "https://1fda-188-113-213-235.ngrok-free.app"
 
@@ -151,8 +171,6 @@ DRF_STANDARDIZED_ERRORS = {"ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": True}
 
 LANGUAGE_CODE = "uz"
 
-USE_L10N = True
-
 USE_I18N = True
 
 USE_TZ = True
@@ -189,8 +207,8 @@ REVERSION = {
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = os.environ.get("EMAIL_PORT", 587)
-EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", True)
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")

@@ -1,15 +1,31 @@
-command:
-	echo "command"
+COMPOSE_DEV = docker compose -f docker-compose.yml
+COMPOSE_PROD = docker compose -f docker-compose.prod.yml
 
-user:
-	docker-compose -f docker-compose.prod.yml run --rm web python backend/manage.py createsuperuser
+.PHONY: help dev-up dev-down prod-up prod-down migrate makemigrations createsuperuser logs
 
-up:
-	docker-compose -f docker-compose.prod.yml up --build -d
+help:
+	@echo "Available targets: dev-up dev-down prod-up prod-down migrate makemigrations createsuperuser logs"
 
-down:
-	docker-compose -f docker-compose.prod.yml down
+dev-up:
+	$(COMPOSE_DEV) up --build -d
+
+dev-down:
+	$(COMPOSE_DEV) down
+
+prod-up:
+	$(COMPOSE_PROD) up --build -d
+
+prod-down:
+	$(COMPOSE_PROD) down
 
 migrate:
-	docker-compose -f docker-compose.prod.yml run --rm web python backend/manage.py makemigrations
-	docker-compose -f docker-compose.prod.yml run --rm web python backend/manage.py migrate
+	$(COMPOSE_PROD) run --rm web python backend/manage.py migrate
+
+makemigrations:
+	$(COMPOSE_PROD) run --rm web python backend/manage.py makemigrations
+
+createsuperuser:
+	$(COMPOSE_PROD) run --rm web python backend/manage.py createsuperuser
+
+logs:
+	$(COMPOSE_DEV) logs -f web db
